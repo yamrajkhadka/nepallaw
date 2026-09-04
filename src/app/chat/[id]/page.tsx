@@ -2,16 +2,26 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNepalLawAI } from "@/hooks/use-nepal-law-ai";
-import { Send, Scale, BookOpen, Menu, Plus } from "lucide-react"; // Added Menu and Plus
+import { Send, Scale, BookOpen, Menu, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRouter } from "next/navigation"; // Added for mobile navigation
+import { useRouter } from "next/navigation";
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
   const { messages, sendMessage, isGenerating, backendStatus } = useNepalLawAI();
   const initialQueryProcessed = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Added for scrolling
   const router = useRouter();
+
+  // FIX 1: Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (initialQueryProcessed.current) return;
@@ -24,10 +34,10 @@ export default function ChatPage() {
   }, [sendMessage]);
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full bg-white font-[family-name:var(--font-geist-sans)]">
+    /* FIX 2: Added 'h-screen' and 'overflow-hidden' to keep the input visible at the bottom */
+    <div className="flex flex-col h-full max-w-4xl mx-auto w-full bg-white font-[family-name:var(--font-geist-sans)] overflow-hidden">
       <header className="p-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-sm z-50">
         <div className="flex items-center gap-2">
-           {/* MOBILE ONLY MENU BUTTON */}
            <Button 
               variant="ghost" 
               size="icon" 
@@ -44,7 +54,8 @@ export default function ChatPage() {
         <div className="text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded-full font-bold">RAG ACTIVE</div>
       </header>
 
-      <ScrollArea className="flex-1 p-4 md:p-6">
+      {/* FIX 3: Added 'min-h-0' to flex-1 to force the ScrollArea to be scrollable rather than expanding */}
+      <ScrollArea className="flex-1 min-h-0 p-4 md:p-6">
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col mb-8 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[90%] md:max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -69,9 +80,12 @@ export default function ChatPage() {
             )}
           </div>
         ))}
+        {/* Invisible div to scroll to */}
+        <div ref={messagesEndRef} className="h-4" /> 
       </ScrollArea>
 
-      <div className="p-4 bg-white border-t border-slate-100">
+      {/* FIX 4: Sticky bottom input area */}
+      <div className="p-4 bg-white border-t border-slate-100 mt-auto">
         <div className="max-w-3xl mx-auto flex gap-2">
           <input
             value={input}
@@ -80,7 +94,11 @@ export default function ChatPage() {
             placeholder={backendStatus === 'open' ? "Ask your legal question..." : "Waking up legal engine..."}
             className="flex-1 bg-slate-50 border border-slate-200 rounded-full py-3 px-4 md:py-3.5 md:px-6 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
           />
-          <Button onClick={() => { sendMessage(input); setInput(""); }} disabled={isGenerating || !input.trim()} className="rounded-full bg-blue-600 h-10 w-10 md:h-11 md:w-11 p-0 shadow-lg shadow-blue-100 active:scale-90 transition-transform flex-shrink-0">
+          <Button 
+            onClick={() => { if(input.trim()) { sendMessage(input); setInput(""); } }} 
+            disabled={isGenerating || !input.trim()} 
+            className="rounded-full bg-blue-600 h-10 w-10 md:h-11 md:w-11 p-0 shadow-lg shadow-blue-100 active:scale-90 transition-transform flex-shrink-0"
+          >
             <Send className="w-4 h-4 text-white" />
           </Button>
         </div>
