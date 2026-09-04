@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, MessageSquare, LogOut, Gavel, Loader2, Settings } from "lucide-react";
+import { Plus, MessageSquare, LogOut, Gavel, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -13,7 +13,6 @@ export function Sidebar() {
   const router = useRouter();
   const { id } = useParams();
 
-  // Function to fetch history
   const fetchHistory = async (userId: string) => {
     const { data, error } = await supabase
       .from('conversations')
@@ -28,13 +27,11 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    // 1. Check current session
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) fetchHistory(data.user.id);
       else setLoading(false);
     });
 
-    // 2. Listen for Auth Changes (Google Login success)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         fetchHistory(session.user.id);
@@ -43,7 +40,6 @@ export function Sidebar() {
       }
     });
 
-    // 3. Listen for new conversations being added to DB
     const channel = supabase.channel('sidebar-sync')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, (payload) => {
         setHistory(prev => [payload.new, ...prev]);
@@ -62,7 +58,8 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col h-full font-[family-name:var(--font-geist-sans)]">
+    /* ADDED 'hidden md:flex' TO THE CLASS BELOW */
+    <div className="hidden md:flex w-64 bg-slate-50 border-r border-slate-200 flex-col h-full font-[family-name:var(--font-geist-sans)]">
       <div className="p-4 border-b border-slate-200">
         <div className="flex items-center gap-2 mb-6 font-bold text-slate-900 uppercase tracking-tighter">
           <div className="bg-blue-600 p-1 rounded-md text-white"><Gavel size={18} /></div>
